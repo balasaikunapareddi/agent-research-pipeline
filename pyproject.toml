@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent-research-pipeline"
+version = "0.1.0"
+description = "Google ADK multi-agent research pipeline — planner decomposes the question, parallel researchers gather evidence from a local corpus, a fact-check gate verifies every claim against its cited source, and the writer only ships supported claims with inline citations. Checkpoint/resume, per-stage retries, cost ledger. Mock-first: no API key, no network."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+authors = [{ name = "Bala Sai Kunapareddi" }]
+dependencies = [
+    "google-adk>=1.0",
+    "pydantic>=2",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+live = ["google-genai>=1.0"]
+
+[project.scripts]
+research-pipeline = "agent_research_pipeline.cli:main"
+research-pipeline-demo = "agent_research_pipeline.demo:main"
+research-pipeline-eval = "agent_research_pipeline.evals:main"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+agent_research_pipeline = ["data/*.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
