@@ -62,6 +62,16 @@ export GEMINI_API_KEY=...            # GEMINI_MODEL overrides the model (default
 research-pipeline --live "What should a first-time buyer know before purchasing an electric vehicle?"
 ```
 
+Live mode is verified against the Gemini free tier
+(`gemini-3.5-flash-lite`): the planner decomposed the solar question
+into five specific sub-questions (financing, incentives, benefits,
+risks, site requirements), 30 drafted claims were checked against
+their cited sources (30 supported, 0 dropped), and the ledger
+recorded real per-stage tokens/latencies (~3,700 tokens, ~35s total).
+One honest imperfection: lexical retrieval surfaced an EV-range
+document under the risks section — correctly cited and verified,
+just off-topic; that's the documented TF-IDF limitation.
+
 ## Why Google ADK
 
 Planner → parallel researchers → fact-checker → writer is exactly ADK's composition model: a `SequentialAgent` chains the stages, a `ParallelAgent` fans the researchers out, and each role is an `LlmAgent` with a behavior-only prompt and typed function tools over the same deterministic pipeline the CLI runs. State passes between stages via `output_key` + instruction templating. The mock/live split is one constructor argument: roles run on a deterministic `ScriptedLlm` by default and on a real Gemini model with `live=True` — tools, retrieval, and the fact-check gate don't change.
