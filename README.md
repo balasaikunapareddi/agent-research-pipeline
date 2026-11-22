@@ -105,7 +105,7 @@ Known limitations: verification is lexical — a paraphrase that changes vocabul
 
 ```
 src/agent_research_pipeline/
-  prompts.py        behavior-only system prompts per role
+  prompts.py        behavior-only system prompts per role + live-mode templates
   decomposition.py  facet rules (mock) + live-output parser
   corpus.py         bundled corpus loader (data/corpus.json, 22 docs)
   retrieval.py      TF-IDF index, sentence ranking
@@ -116,7 +116,7 @@ src/agent_research_pipeline/
   live.py           google-genai calls for live plan/draft steps
   tools.py          typed ADK tools over the pipeline
   mock_llm.py       ScriptedLlm for the offline ADK loop
-  agent.py          ADK composition (Sequential/Parallel/Llm agents)
+  agent.py          ResearchAgent class + ADK composition (Sequential/Parallel/Llm agents)
   evals.py          bundled eval runner (data/evals.json)
   demo.py           one-command demo (run + crash/resume + ADK loop)
   cli.py            research-pipeline CLI

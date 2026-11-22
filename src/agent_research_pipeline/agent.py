@@ -129,11 +129,56 @@ async def _run_async(agent: SequentialAgent, question: str) -> str:
     return final_text
 
 
+class ResearchAgent:
+    """The research pipeline agent: planner → researchers → fact-checker → writer.
+
+    This class is the agent's front door. It composes four ADK
+    ``LlmAgent`` roles (built by :func:`build_agent`):
+
+    1. **planner** — splits the question into sub-questions
+       (tool: ``decompose_question``, prompt: ``PLANNER_PROMPT``).
+    2. **researchers** — ``NUM_RESEARCHERS`` agents in parallel, one per
+       sub-question (tool: ``search_sources``, prompt:
+       ``RESEARCHER_PROMPT_TEMPLATE``).
+    3. **fact_checker** — verifies every claim against its cited source
+       (tools: ``extract_and_verify_claims``, ``verify_claim``, prompt:
+       ``FACT_CHECKER_PROMPT``).
+    4. **writer** — assembles the final cited report
+       (tool: ``assemble_report``, prompt: ``WRITER_PROMPT``).
+
+    All prompts live in ``prompts.py``; all tools are typed functions in
+    ``tools.py`` backed by the deterministic ``ResearchPipeline``
+    (``pipeline.py``). Mock mode (default) runs every role on
+    ``ScriptedLlm`` — offline, no key. Live mode (``live=True``) swaps in
+    Gemini (``LIVE_MODEL``) and needs ``GEMINI_API_KEY``.
+
+    Usage::
+
+        agent = ResearchAgent()                 # mock mode
+        report = agent.run("What does X cost?")
+
+        agent = ResearchAgent(live=True)        # Gemini mode
+    """
+
+    def __init__(
+        self,
+        live: bool = False,
+        pipeline: ResearchPipeline | None = None,
+    ) -> None:
+        self.live = live
+        self.model = LIVE_MODEL if live else "ScriptedLlm (mock)"
+        self.pipeline = pipeline
+        self.agent = build_agent(live=live, pipeline=pipeline)
+
+    def run(self, question: str) -> str:
+        """Run one research question through the composition; return the report."""
+        return asyncio.run(_run_async(self.agent, question))
+
+
 def run_agent(
     question: str,
     live: bool = False,
     pipeline: ResearchPipeline | None = None,
 ) -> str:
     """Run one research question through the ADK composition; return the report."""
-    agent = build_agent(live=live, pipeline=pipeline)
-    return asyncio.run(_run_async(agent, question))
+    return ResearchAgent(live=live, pipeline=pipeline).run(question)

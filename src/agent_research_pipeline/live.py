@@ -17,6 +17,7 @@ from .claims import Claim, parse_claim_lines
 from .decomposition import parse_live_decomposition
 from .ledger import estimate_tokens
 from .pipeline import TransientError
+from .prompts import LIVE_PLANNER_PROMPT_TEMPLATE, LIVE_WRITER_PROMPT_TEMPLATE
 from .retrieval import SearchResult
 
 DEFAULT_MODEL = "gemini-3.5-flash-lite"
@@ -56,15 +57,7 @@ def _generate(prompt: str) -> tuple[str, dict]:
 
 def live_decompose(question: str) -> tuple[list[str], dict]:
     """Ask the planner LLM for sub-questions; parse deterministically."""
-    prompt = (
-        "You are the planner in a research pipeline. Split the research "
-        "question below into 4 to 6 focused sub-questions that researchers "
-        "can answer independently. Cover cost, benefits, risks, and "
-        "practical requirements where relevant.\n\n"
-        f"Research question: {question}\n\n"
-        "Reply with ONLY a JSON array of strings, e.g. "
-        '["Sub-question one?", "Sub-question two?"]'
-    )
+    prompt = LIVE_PLANNER_PROMPT_TEMPLATE.format(question=question)
     text, usage = _generate(prompt)
     return parse_live_decomposition(text, question), usage
 
@@ -85,16 +78,8 @@ def live_draft_claims(
         for r in results:
             evidence_lines.append(f"[{r.doc_id}] {r.snippet}")
             source_to_sub.setdefault(r.doc_id, sub_question)
-    prompt = (
-        "You are a research writer. Using ONLY the evidence below, write "
-        "factual claims that help answer the research question. Rules:\n"
-        "- One claim per line.\n"
-        "- End every line with the id of the evidence source that supports "
-        "it, in square brackets, like [solar-install-cost].\n"
-        "- Do not invent facts or numbers that are not in the evidence.\n"
-        "- Write at most 12 claims.\n\n"
-        f"Research question: {question}\n\nEvidence:\n"
-        + "\n".join(evidence_lines)
+    prompt = LIVE_WRITER_PROMPT_TEMPLATE.format(
+        question=question, evidence="\n".join(evidence_lines)
     )
     text, usage = _generate(prompt)
     claims = parse_claim_lines(text, set(source_to_sub))

@@ -1,9 +1,16 @@
-"""System prompts for the four pipeline roles.
+"""System prompts for the four pipeline roles, plus the live-mode prompts.
 
 Behavior only, per the house rule: all scenario logic (decomposition
 facets, retrieval ranking, citation-verification thresholds, the
 fact-check gate) lives in code. The prompts tell each agent *how to
 behave*, never *how to decide*.
+
+The first four constants are the ADK role instructions used by
+``agent.py`` (planner / researcher / fact-checker / writer). The two
+``LIVE_*_TEMPLATE`` constants at the bottom are the direct google-genai
+prompts used by ``live.py`` when the pipeline runs without the ADK
+composition; they are ``str.format`` templates (``{question}``,
+``{evidence}``).
 """
 
 PLANNER_PROMPT = """You are the planner in a research pipeline. Role: planner.
@@ -46,3 +53,33 @@ Rules:
 - Reply with the report text the tool returns, unchanged.
 - Every claim in the report must carry its citation. If the tool dropped a claim, it stays dropped.
 """
+
+# --- Live-mode prompts (live.py, direct google-genai calls) ----------------
+# These mirror PLANNER_PROMPT / WRITER_PROMPT for the non-ADK live path:
+# the planner reply is parsed into sub-questions and the writer reply into
+# cited claims, both by deterministic code in decomposition.py / claims.py.
+
+LIVE_PLANNER_PROMPT_TEMPLATE = """\
+You are the planner in a research pipeline. Split the research \
+question below into 4 to 6 focused sub-questions that researchers \
+can answer independently. Cover cost, benefits, risks, and \
+practical requirements where relevant.
+
+Research question: {question}
+
+Reply with ONLY a JSON array of strings, e.g. \
+["Sub-question one?", "Sub-question two?"]"""
+
+LIVE_WRITER_PROMPT_TEMPLATE = """\
+You are a research writer. Using ONLY the evidence below, write \
+factual claims that help answer the research question. Rules:
+- One claim per line.
+- End every line with the id of the evidence source that supports \
+it, in square brackets, like [solar-install-cost].
+- Do not invent facts or numbers that are not in the evidence.
+- Write at most 12 claims.
+
+Research question: {question}
+
+Evidence:
+{evidence}"""
